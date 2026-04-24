@@ -1,158 +1,425 @@
-# PointNeXt Reproduction — Clean PyTorch Project
+# A Unified Framework for Point Cloud Learning: Extending PointNeXt toward Self-Supervised and Superpoint Transformer Paradigms
 
-A beginner-friendly, modular PyTorch reproduction of the PointNeXt paper
-("PointNeXt: Revisiting PointNet++ with Improved Training and Scaling
-Strategies", Qian et al., NeurIPS 2022).
+A clean, modular PyTorch project for reproducing **PointNeXt** and extending it toward **self-supervised learning**, **unsupervised clustering**, and **superpoint-based transformer ideas** for point cloud understanding.
 
-The project is organized so each stage of the paper (baseline → improved
-training → architecture changes → tasks → ablations) lives in its own module.
-Everything runs on toy synthetic data by default so you can smoke-test the
-whole pipeline in minutes on a CPU, then swap in real datasets via config.
+This project started as a reproduction of the paper **“PointNeXt: Revisiting PointNet++ with Improved Training and Scaling Strategies”** and gradually evolved into a broader experimental framework for 3D point cloud learning. The goal is not only to reproduce the supervised pipeline, but also to make it easy to explore modern directions such as representation learning and scalable transformer-based reasoning.
 
-## What's in the box
+The codebase is organized to be beginner-friendly, easy to debug, and simple to extend. By default, everything runs on small synthetic toy datasets, so the full pipeline can be tested quickly on a CPU before moving to larger real datasets.
 
-| Module | What it does |
-|---|---|
-| `datasets/` | Toy cls / seg / partseg datasets, preprocessing, 8 augmentations from the paper, config-driven augmentation factory |
-| `models/` | PointNet++ baseline (cls/seg/partseg), PointNeXt (cls/seg/partseg), all 4 presets (S / B / L / XL), InvResMLP block, normalized Δp, stem MLP, residual SA, symmetric decoder |
-| `training/` | Trainer loop with checkpointing and resume, CE + label smoothing, Adam/AdamW/SGD, Step/MultiStep/Cosine schedulers |
-| `evaluation/` | ConfusionMatrix, OA, mAcc, per-class IoU, mIoU, instance mIoU (part seg) |
-| `visualization/` | Matplotlib 3D scatter: raw / labeled / pred-vs-GT / before-after |
-| `unsupervised/` | Encoder embedding extraction, KMeans + DBSCAN, PCA / t-SNE / UMAP projections, ARI / NMI / silhouette (labeled as an extension — not part of the paper) |
-| `scripts/` | `train.py`, `evaluate.py`, `run_ablation.py`, `model_stats.py`, `demo_visualize.py`, `unsupervised_cluster.py` |
-| `configs/` | One baseline + one PointNeXt YAML per task |
-| `notes/` | PointNet++ / PointNeXt / Superpoint Transformer comparison, experiment report template |
-| `tests/` | 15 smoke tests that cover the whole pipeline and pass end-to-end |
+---
 
-## Install
+## What this project covers
+
+This repository currently supports:
+
+* **Supervised point cloud learning**
+
+  * Classification
+  * Semantic segmentation
+  * Part segmentation
+
+* **PointNeXt reproduction**
+
+  * PointNet++ baseline
+  * PointNeXt variants
+  * Improved training strategies
+  * Architecture scaling and ablations
+
+* **Self-supervised learning extensions**
+
+  * Contrastive representation learning
+  * Autoencoder-based feature learning
+
+* **Unsupervised learning**
+
+  * Embedding extraction
+  * KMeans and DBSCAN clustering
+  * PCA / t-SNE / UMAP projections
+  * ARI / NMI / silhouette evaluation
+
+* **Scalable modeling ideas**
+
+  * Superpoint-based tokenization
+  * Initial Superpoint Transformer style experimentation
+
+* **Utilities**
+
+  * Visualization tools
+  * Checkpointing and resume
+  * Ablation runs
+  * Model statistics
+  * Smoke tests for the whole pipeline
+
+---
+
+## Project structure
+
+| Folder           | Purpose                                                                              |
+| ---------------- | ------------------------------------------------------------------------------------ |
+| `datasets/`      | Toy datasets, preprocessing, augmentations, dataset loading                          |
+| `models/`        | PointNet++ baseline, PointNeXt models, shared blocks, scalable model variants        |
+| `training/`      | Training loop, checkpointing, resume logic, optimizer and scheduler support          |
+| `evaluation/`    | Accuracy, mAcc, IoU, mIoU, instance mIoU, clustering metrics                         |
+| `visualization/` | 3D scatter plots and prediction visualization tools                                  |
+| `unsupervised/`  | Embedding extraction, clustering, dimensionality reduction                           |
+| `scripts/`       | Training, evaluation, ablation, visualization, model stats, unsupervised experiments |
+| `configs/`       | YAML experiment configs for classification, segmentation, and part segmentation      |
+| `notes/`         | Comparison notes, experiment summaries, paper reading notes                          |
+| `tests/`         | Smoke tests covering the pipeline end-to-end                                         |
+
+---
+
+## Main models included
+
+### Supervised models
+
+* PointNet++ baseline
+* PointNeXt-S
+* PointNeXt-B
+* Support for larger presets such as L / XL if enabled in config
+
+### Self-supervised extensions
+
+* Contrastive encoder pipeline
+* Autoencoder-based reconstruction pipeline
+
+### Experimental transformer direction
+
+* Superpoint construction
+* Superpoint-level feature aggregation
+* Superpoint Transformer style pipeline for scalable reasoning
+
+---
+
+## Why toy datasets are used first
+
+The repository uses synthetic toy datasets by default because they make debugging much easier.
+
+These datasets help verify that:
+
+* data loading works correctly,
+* models run end-to-end,
+* losses decrease,
+* metrics are computed properly,
+* checkpoints save and load correctly,
+* ablation scripts behave as expected,
+* visualization tools produce the expected outputs.
+
+The current toy datasets are useful for implementation validation, but they are **not** meant to replace real benchmarks.
+
+---
+
+## Toy datasets included
+
+| Task                  | Dataset       | Description                                                  |
+| --------------------- | ------------- | ------------------------------------------------------------ |
+| Classification        | `toy_cls`     | Simple synthetic shapes such as cube, sphere, cylinder, cone |
+| Semantic Segmentation | `toy_seg`     | Small synthetic scenes with basic classes                    |
+| Part Segmentation     | `toy_partseg` | Simple objects split into semantic parts                     |
+
+---
+
+## Installation
+
+Install the required dependencies with:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-Only core deps (PyTorch, NumPy, PyYAML, matplotlib, scikit-learn, tqdm).
-Open3D and UMAP are optional.
+Core dependencies include:
 
-## Quick start (toy data, CPU-friendly)
+* PyTorch
+* NumPy
+* PyYAML
+* matplotlib
+* scikit-learn
+* tqdm
+
+Optional:
+
+* UMAP
+* Open3D
+
+---
+
+## Quick start
+
+### 1. Run the full smoke test suite
 
 ```bash
-# Run the smoke test suite — ~30 seconds, tests the whole pipeline
 python tests/run_all.py
+```
 
-# Train classification end-to-end
+This is the best first step. It checks that the overall pipeline is working.
+
+### 2. Train classification
+
+```bash
 python scripts/train.py --config configs/cls_pointnext_s.yaml
+```
 
-# Train semantic segmentation
+### 3. Train semantic segmentation
+
+```bash
 python scripts/train.py --config configs/seg_pointnext_s.yaml
+```
 
-# Train part segmentation
+### 4. Train part segmentation
+
+```bash
 python scripts/train.py --config configs/partseg_pointnext_s.yaml
+```
 
-# Evaluate a saved checkpoint
+### 5. Evaluate a checkpoint
+
+```bash
 python scripts/evaluate.py --config configs/cls_pointnext_s.yaml \
                            --checkpoint runs/cls_pointnext_s/best.pt
+```
 
-# Run the additive ablation sweep (Tab. 4 / Tab. 5 style)
+### 6. Run ablation experiments
+
+```bash
 python scripts/run_ablation.py --task cls --epochs 5 --out results/ablation_cls.csv
 python scripts/run_ablation.py --task seg --epochs 5 --out results/ablation_seg.csv
+```
 
-# Print param count and throughput
+### 7. View model statistics
+
+```bash
 python scripts/model_stats.py --config configs/seg_pointnext_s.yaml
+```
 
-# Save prediction visualizations
+### 8. Generate prediction visualizations
+
+```bash
 python scripts/demo_visualize.py --config configs/seg_pointnext_s.yaml \
                                  --checkpoint runs/seg_pointnext_s/best.pt \
                                  --out-dir vis/seg
+```
 
-# Unsupervised embedding + KMeans + t-SNE projection
+### 9. Run unsupervised clustering
+
+```bash
 python scripts/unsupervised_cluster.py --config configs/cls_pointnext_s.yaml \
                                        --checkpoint runs/cls_pointnext_s/best.pt \
                                        --method kmeans --project tsne \
                                        --out-dir vis/unsup
 ```
 
-## Configs
+---
 
-Each YAML has these blocks:
+## Self-supervised learning support
+
+This project now includes early support for self-supervised representation learning.
+
+### Contrastive learning
+
+The encoder is trained using two augmented views of the same point cloud. The goal is to learn embeddings that remain consistent across transformations while separating different samples.
+
+### Autoencoder learning
+
+The encoder learns a compact latent representation, and the decoder reconstructs the original point cloud from that representation.
+
+These two branches make it possible to explore representation learning before moving into downstream supervised or unsupervised tasks.
+
+---
+
+## Unsupervised learning support
+
+The project also includes an unsupervised analysis pipeline.
+
+Current support includes:
+
+* feature extraction from trained encoders,
+* clustering using **KMeans** and **DBSCAN**,
+* embedding visualization with **PCA**, **t-SNE**, and **UMAP**,
+* clustering quality metrics such as:
+
+  * ARI
+  * NMI
+  * Silhouette Score
+
+This part of the project is an extension and is **not part of the original PointNeXt paper**.
+
+---
+
+## Superpoint Transformer direction
+
+Beyond PointNeXt, the project also begins exploring **superpoint-based transformer modeling**.
+
+The idea is to first group points into superpoints, then perform learning and reasoning at the superpoint level instead of the individual point level. This reduces the number of tokens and makes transformer-style global reasoning more practical for large scenes.
+
+This section is currently meant as an experimental extension and research direction, not as a final benchmark implementation.
+
+---
+
+## Configuration format
+
+Each YAML config typically contains the following sections:
 
 ```yaml
-model:        # name, preset (s/b/l/xl), in_channels, num_classes, normalize_dp
-dataset:      # name, num_samples, num_points, batch_size, augmentation, val_transform
-val_dataset:  # optional override for the val split
-criterion:    # cross_entropy, label_smoothing
-optimizer:    # adam / adamw / sgd
-scheduler:    # step / multistep / cosine
-training:     # num_epochs, monitor_metric, parts_per_obj (partseg only)
+model:
+dataset:
+val_dataset:
+criterion:
+optimizer:
+scheduler:
+training:
 ```
 
-Toggle an individual augmentation on / off by editing the `augmentation:`
-block — the `build_augmentation` factory picks up any key that's set to
-truthy. For ablations, let `scripts/run_ablation.py` do the sweeping.
+Typical config options include:
 
-One gotcha: the `val_transform` key under `dataset` (and `val_dataset`) exists
-because some steps labeled "augmentation" in the paper (especially
-`height_appending`) are actually deterministic feature-generation steps that
-must be applied to both splits or the model input shape won't match. Keep
-`height_appending` under `val_transform` anywhere it's under `augmentation`.
+* model name and preset
+* input channels
+* number of classes
+* dataset name and size
+* number of points
+* batch size
+* augmentation settings
+* optimizer choice
+* scheduler choice
+* number of epochs
+* task-specific settings
+
+---
+
+## Data augmentation
+
+The augmentation pipeline is config-driven. Common augmentations include:
+
+* random rotation
+* random scaling
+* jittering
+* point resampling
+* height appending
+* color dropping
+* color auto-contrast
+
+For ablation experiments, it is easier to use the provided ablation script rather than manually editing configs for each run.
+
+---
+
+## Reading order for the project
+
+If you are new to the codebase, this is a good order to follow:
+
+1. `configs/cls_pointnext_s.yaml`
+   See what a full experiment looks like.
+
+2. `datasets/augmentation.py`
+   Understand the training recipe and augmentation setup.
+
+3. `models/blocks.py`
+   Review the core building blocks.
+
+4. `models/pointnet2.py`
+   Start with the baseline.
+
+5. `models/pointnext.py`
+   Then see how PointNeXt extends the baseline.
+
+6. `training/trainer.py`
+   Understand the unified training loop.
+
+7. `scripts/run_ablation.py`
+   See how ablations are structured.
+
+8. `unsupervised/`
+   Review embedding extraction and clustering.
+
+9. `notes/comparison.md`
+   Read the high-level comparison with related approaches.
+
+---
 
 ## Using real datasets
 
-All toy datasets live in `datasets/toy.py`. To plug in a real dataset:
+All default examples use toy data, but the project is designed so real datasets can be added easily.
 
-1. Write a new `Dataset` class that returns the same dict format:
-   `{"xyz": [N,3] float, "features": [N,C] float, "label": ... }` plus
-   `"obj_label"` for part segmentation.
-2. Register it in `datasets/loader.py`:
+To plug in a real dataset:
+
+1. Create a new `Dataset` class that returns the expected format:
+
    ```python
-   from datasets.s3dis import S3DISDataset
-   register_dataset("s3dis", S3DISDataset)
-   ```
-3. Point your config at the new name:
-   ```yaml
-   dataset:
-     name: s3dis
-     kwargs:
-       root: /path/to/S3DIS
-       ...
+   {
+     "xyz": ...,
+     "features": ...,
+     "label": ...
+   }
    ```
 
-## Reading order
+   and include `"obj_label"` when needed for part segmentation.
 
-If you want to understand the project end-to-end, read in this order:
+2. Register the dataset in `datasets/loader.py`.
 
-1. `configs/cls_pointnext_s.yaml` — see what an experiment looks like
-2. `datasets/augmentation.py` — the paper's training-recipe knobs
-3. `models/blocks.py` — `SetAbstractionBlock` and `InvResMLPBlock` side-by-side
-4. `models/pointnet2.py` → `models/pointnext.py` — baseline, then the upgrade
-5. `training/trainer.py` — the unified training loop
-6. `scripts/run_ablation.py` — how ablations are parameterized
-7. `notes/comparison.md` — when to reach for PointNeXt vs alternatives
+3. Point the config file to the new dataset name.
 
-## What's synthetic vs. what's tested
+Possible next datasets:
 
-Because the toy datasets are procedurally generated (sphere / cube / cylinder /
-cone for cls; ground / wall / furniture planes for seg), don't read meaningful
-accuracy numbers out of the smoke runs. The value of the toy stack is:
+* ScanObjectNN
+* ShapeNetPart
+* S3DIS
 
-- Verify every code path works end-to-end
-- Confirm ablation patches apply correctly (checkpoint metadata shows this)
-- Benchmark inference throughput / memory footprint of each model size
+---
 
-When you swap in real data, you should see the paper's pattern: the baseline
-gets a big jump from the improved training alone (Tab. 4 first block), and a
-smaller additional jump from PointNeXt-S (Tab. 4 last row).
+## Notes on performance
 
-## Performance notes
+For clarity and readability, the project currently uses pure PyTorch implementations for some point operations such as FPS and ball query.
 
-This project uses pure-PyTorch implementations of FPS and ball query for
-readability. For production use on S3DIS-scale scenes you'll want to swap
-these for the compiled CUDA versions from `pointnet2_ops` — drop them into
-`models/pointnet_ops.py` replacing the pure-Python ones. The rest of the
-project doesn't need to change.
+That makes the code easier to read and modify, but it is not the fastest option for large-scale training. For bigger datasets and production-level experiments, CUDA-optimized implementations such as `pointnet2_ops` should be used.
+
+---
+
+## What is tested
+
+The test suite is designed to cover the full workflow:
+
+* dataset loading
+* augmentations
+* model forward pass
+* loss computation
+* training loop
+* evaluation metrics
+* checkpoint saving/loading
+* visualization calls
+* unsupervised pipeline
+
+All smoke tests are intended to make sure the project is stable before scaling to larger experiments.
+
+---
+
+## Current scope and limitations
+
+This repository is strong as a **research prototype and implementation framework**, but it still has some current limits:
+
+* default runs use toy datasets,
+* reported performance on toy data is not meaningful for benchmarking,
+* unsupervised and superpoint transformer components are still early-stage,
+* larger benchmark validation is still pending.
+
+So the current focus is correctness, flexibility, and extensibility.
+
+---
+
+## Planned next steps
+
+* Add **ScanObjectNN** for real classification
+* Add **ShapeNetPart** for real part segmentation
+* Add **S3DIS** for real scene segmentation
+* Expand self-supervised experiments
+* Strengthen Superpoint Transformer implementation
+* Compare PointNeXt with transformer-based 3D models on real data
+* Add training curves and more qualitative visualization outputs
+
+---
 
 ## Citation
 
-```
+If you use this repository, please cite the original PointNeXt paper:
+
+```bibtex
 @inproceedings{qian2022pointnext,
   title={PointNeXt: Revisiting PointNet++ with Improved Training and Scaling Strategies},
   author={Qian, Guocheng and Li, Yuchen and Peng, Houwen and Mai, Jinjie and Hammoud, Hasan Abed Al Kader and Elhoseiny, Mohamed and Ghanem, Bernard},

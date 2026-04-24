@@ -1,0 +1,13 @@
+# Core
+torch>=1.12
+numpy>=1.21
+pyyaml>=6.0
+matplotlib>=3.5
+scikit-learn>=1.0
+tqdm>=4.62
+
+# Optional — only needed if you want 3D Open3D visualization
+# open3d>=0.16
+
+# Optional — only needed for UMAP projections in unsupervised/
+# umap-learn>=0.5

@@ -1,0 +1,57 @@
+# PointNet++ baseline on toy part segmentation.
+# Original PointNet++ ShapeNetPart recipe (Tab. VI):
+#   - Adam + Step Decay
+#   - only random jittering
+#   - no normalize_dp
+
+seed: 42
+task: partseg
+output_dir: runs/partseg_pointnet2_baseline
+
+model:
+  name: pointnet2_partseg
+  in_channels: 3          # normals only
+  num_parts: 2
+  num_obj_classes: 4
+  normalize_dp: false
+
+dataset:
+  name: toy_partseg
+  num_samples: 32
+  num_points: 512
+  batch_size: 8
+  num_workers: 0
+  augmentation:
+    random_jitter: {sigma: 0.01, clip: 0.05}
+
+val_dataset:
+  name: toy_partseg
+  num_samples: 16
+  num_points: 512
+  batch_size: 8
+  num_workers: 0
+
+criterion:
+  name: cross_entropy
+  label_smoothing: 0.0
+  ignore_index: -1
+
+optimizer:
+  name: adam
+  lr: 0.001
+  weight_decay: 0.0
+
+scheduler:
+  name: step
+  step_size: 20
+  gamma: 0.5
+
+training:
+  num_epochs: 20
+  monitor_metric: instance_miou
+  monitor_mode: max
+  parts_per_obj:
+    0: [0, 1]
+    1: [0, 1]
+    2: [0, 1]
+    3: [0, 1]

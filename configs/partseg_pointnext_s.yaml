@@ -1,0 +1,67 @@
+# PointNeXt-S on toy part segmentation (ShapeNetPart-style: one object class
+# per sample, per-point part label). Matches Appendix Tab. I settings:
+#   - AdamW + Cosine
+#   - random rotation, random scaling, random jittering, height appending
+#   - normalize_dp=true
+
+seed: 42
+task: partseg
+output_dir: runs/partseg_pointnext_s
+
+model:
+  name: pointnext_partseg
+  # 3 normals + 1 height = 4
+  in_channels: 4
+  num_parts: 2
+  num_obj_classes: 4
+  preset: s
+  normalize_dp: true
+
+dataset:
+  name: toy_partseg
+  num_samples: 32
+  num_points: 512
+  batch_size: 8
+  num_workers: 0
+  augmentation:
+    random_rotation: {axis: z}
+    random_scaling: {scale_range: [0.9, 1.1]}
+    random_jitter: {sigma: 0.01, clip: 0.05}
+    height_appending: true
+  val_transform:
+    height_appending: true
+
+val_dataset:
+  name: toy_partseg
+  num_samples: 16
+  num_points: 512
+  batch_size: 8
+  num_workers: 0
+  val_transform:
+    height_appending: true
+
+criterion:
+  name: cross_entropy
+  label_smoothing: 0.0
+  ignore_index: -1
+
+optimizer:
+  name: adamw
+  lr: 0.0002
+  weight_decay: 0.1
+
+scheduler:
+  name: cosine
+  eta_min: 1.0e-6
+
+training:
+  num_epochs: 20
+  monitor_metric: instance_miou
+  monitor_mode: max
+  # For the toy dataset, each of the 4 object classes has all 2 parts.
+  # For real ShapeNetPart, this maps {0: [0,1,2,3], 1: [4,5], ...}
+  parts_per_obj:
+    0: [0, 1]
+    1: [0, 1]
+    2: [0, 1]
+    3: [0, 1]

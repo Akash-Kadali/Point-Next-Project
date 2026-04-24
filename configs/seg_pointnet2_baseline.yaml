@@ -1,0 +1,52 @@
+# PointNet++ baseline on toy semantic segmentation.
+# Matches the "PointNet++" row at the top of Tab. 5:
+#   - only random_rotation, no color dropping, no height appending
+#   - Adam + Step Decay, no label smoothing
+#
+# Use vs seg_pointnext_s.yaml to isolate the training recipe contribution.
+
+seed: 42
+task: seg
+output_dir: runs/seg_pointnet2_baseline
+
+model:
+  name: pointnet2_seg
+  in_channels: 3          # RGB only, no height appending
+  num_classes: 3
+  normalize_dp: false
+
+dataset:
+  name: toy_seg
+  num_samples: 16
+  num_points: 1024
+  batch_size: 2
+  num_workers: 0
+  augmentation:
+    random_rotation: {axis: z}
+
+val_dataset:
+  name: toy_seg
+  num_samples: 8
+  num_points: 1024
+  batch_size: 2
+  num_workers: 0
+
+criterion:
+  name: cross_entropy
+  label_smoothing: 0.0
+  ignore_index: -1
+
+optimizer:
+  name: adam
+  lr: 0.001
+  weight_decay: 1.0e-4
+
+scheduler:
+  name: step
+  step_size: 20
+  gamma: 0.7
+
+training:
+  num_epochs: 20
+  monitor_metric: mean_iou
+  monitor_mode: max

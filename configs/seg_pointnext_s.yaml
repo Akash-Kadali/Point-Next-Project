@@ -1,0 +1,59 @@
+# PointNeXt-S on toy semantic segmentation (S3DIS-style toy scenes with RGB).
+# The augmentation recipe here is the one that gave the biggest single jump
+# in the paper (Tab. 5): color_dropping alone adds ~5.9% mIoU on S3DIS area 5.
+
+seed: 42
+task: seg
+output_dir: runs/seg_pointnext_s
+
+model:
+  name: pointnext_seg
+  # 3 RGB + 1 height = 4 input channels
+  in_channels: 4
+  num_classes: 3
+  preset: s
+  normalize_dp: true
+  # default npoints (1024, 256, 64, 16) are fine for N=2048 scenes
+
+dataset:
+  name: toy_seg
+  num_samples: 16
+  num_points: 1024
+  batch_size: 2
+  num_workers: 0
+  augmentation:
+    random_rotation: {axis: z}
+    random_scaling: {scale_range: [0.9, 1.1]}
+    color_auto_contrast: {p: 0.2}
+    color_dropping: {p: 0.2}
+    height_appending: true
+  val_transform:
+    height_appending: true
+
+val_dataset:
+  name: toy_seg
+  num_samples: 8
+  num_points: 1024
+  batch_size: 2
+  num_workers: 0
+  val_transform:
+    height_appending: true
+
+criterion:
+  name: cross_entropy
+  label_smoothing: 0.2
+  ignore_index: -1
+
+optimizer:
+  name: adamw
+  lr: 0.01
+  weight_decay: 1.0e-4
+
+scheduler:
+  name: cosine
+  eta_min: 1.0e-6
+
+training:
+  num_epochs: 20
+  monitor_metric: mean_iou
+  monitor_mode: max

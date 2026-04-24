@@ -1,0 +1,62 @@
+# PointNeXt-S on toy classification data.
+# Uses the paper's improved training recipe:
+#   - AdamW + Cosine Decay
+#   - Label Smoothing ε=0.3 (Tab. V)
+#   - height_appending, point_resampling, random scaling/rotation
+#   - normalize_dp=true (Eq. 2)
+#
+# Everything toggles via the `augmentation:` block — flip any key to false/null
+# to ablate it. See scripts/run_ablation.py for automated sweeps.
+
+seed: 42
+task: cls
+output_dir: runs/cls_pointnext_s
+
+model:
+  name: pointnext_cls
+  in_channels: 1          # only height-appending feature (no xyz duplication)
+  num_classes: 4
+  preset: s               # C=32, B=(0,0,0,0)
+  normalize_dp: true      # PointNeXt Eq. 2
+
+dataset:
+  name: toy_cls
+  num_samples: 64
+  num_points: 512
+  batch_size: 8
+  num_workers: 0
+  augmentation:
+    point_resampling: {num_points: 512}
+    random_rotation: {axis: z}
+    random_scaling: {scale_range: [0.9, 1.1]}
+    height_appending: true
+  # Val must also apply height_appending so features shape matches model.in_channels.
+  val_transform:
+    height_appending: true
+
+val_dataset:
+  name: toy_cls
+  num_samples: 32
+  num_points: 512
+  batch_size: 8
+  num_workers: 0
+  val_transform:
+    height_appending: true
+
+criterion:
+  name: cross_entropy
+  label_smoothing: 0.3
+
+optimizer:
+  name: adamw
+  lr: 0.002
+  weight_decay: 0.05
+
+scheduler:
+  name: cosine
+  eta_min: 1.0e-6
+
+training:
+  num_epochs: 20
+  monitor_metric: overall_accuracy
+  monitor_mode: max

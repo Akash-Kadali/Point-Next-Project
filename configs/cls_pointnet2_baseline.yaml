@@ -1,0 +1,53 @@
+# PointNet++ baseline on toy classification data.
+# This mirrors the original PointNet++ training recipe (first row of Tab. 4):
+#   - Adam + Step Decay
+#   - No label smoothing
+#   - Only random rotation + jittering (the original augmentations)
+#
+# Use this vs cls_pointnext_s.yaml to see the improved-training gap.
+
+seed: 42
+task: cls
+output_dir: runs/cls_pointnet2_baseline
+
+model:
+  name: pointnet2_cls
+  in_channels: 3          # xyz as features (classic PointNet++ convention)
+  num_classes: 4
+  normalize_dp: false     # off for the strict baseline
+
+dataset:
+  name: toy_cls
+  num_samples: 64
+  num_points: 512
+  batch_size: 8
+  num_workers: 0
+  augmentation:
+    random_rotation: {axis: z}
+    random_jitter: {sigma: 0.01, clip: 0.05}
+
+val_dataset:
+  name: toy_cls
+  num_samples: 32
+  num_points: 512
+  batch_size: 8
+  num_workers: 0
+
+criterion:
+  name: cross_entropy
+  label_smoothing: 0.0    # off for baseline
+
+optimizer:
+  name: adam
+  lr: 0.001
+  weight_decay: 1.0e-4
+
+scheduler:
+  name: step
+  step_size: 20
+  gamma: 0.7
+
+training:
+  num_epochs: 20
+  monitor_metric: overall_accuracy
+  monitor_mode: max

@@ -15,6 +15,7 @@ Config shape:
 from __future__ import annotations
 from typing import Any, Dict
 import torch.nn as nn
+from .superpoint_transformer import SuperpointTransformerSeg
 
 from .pointnet2 import (
     PointNet2ClsModel,
@@ -36,6 +37,7 @@ _MODEL_REGISTRY = {
     "pointnext_cls":     PointNeXtClsModel,
     "pointnext_seg":     PointNeXtSegModel,
     "pointnext_partseg": PointNeXtPartSegModel,
+    "superpoint_transformer_seg": SuperpointTransformerSeg,
 }
 
 

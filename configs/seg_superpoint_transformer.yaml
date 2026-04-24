@@ -1,0 +1,55 @@
+seed: 42
+task: seg
+output_dir: runs/seg_superpoint_transformer
+
+model:
+  name: superpoint_transformer_seg
+  in_channels: 4
+  num_classes: 3
+  num_superpoints: 64
+  hidden_dim: 128
+  num_heads: 4
+  num_layers: 2
+  dropout: 0.1
+
+dataset:
+  name: toy_seg
+  num_samples: 16
+  num_points: 1024
+  batch_size: 2
+  num_workers: 0
+  augmentation:
+    random_rotation: {axis: z}
+    random_scaling: {scale_range: [0.9, 1.1]}
+    random_jitter: {sigma: 0.01, clip: 0.05}
+    height_appending: true
+  val_transform:
+    height_appending: true
+
+val_dataset:
+  name: toy_seg
+  num_samples: 8
+  num_points: 1024
+  batch_size: 2
+  num_workers: 0
+  val_transform:
+    height_appending: true
+
+criterion:
+  name: cross_entropy
+  label_smoothing: 0.0
+  ignore_index: -1
+
+optimizer:
+  name: adamw
+  lr: 0.001
+  weight_decay: 0.0001
+
+scheduler:
+  name: cosine
+  eta_min: 1.0e-6
+
+training:
+  num_epochs: 20
+  monitor_metric: mean_iou
+  monitor_mode: max

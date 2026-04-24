@@ -1,0 +1,5 @@
+num_clusters: 4
+num_noise: 0
+ari: 1.0
+nmi: 1.0
+silhouette: 0.35561949014663696
